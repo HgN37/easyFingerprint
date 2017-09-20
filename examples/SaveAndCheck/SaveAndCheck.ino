@@ -1,4 +1,4 @@
-#include "easyFingerprint.h"
+#include <easyFingerprint.h>
 
 /*
  * This example show how to save and scan new fingerprint
@@ -20,7 +20,7 @@ int _respond;
 void setup() {
   Serial.begin(115200);
   Serial.println("\r\nFingerprint sensor init...");
-  _respond = fp.init();
+  _respond = fp.init(9600*6);
   if(_respond != FP_SUCCESS){
     Serial.println("ERR: Can't find fingerprint sensor :(");
     while(1);

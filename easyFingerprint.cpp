@@ -1,22 +1,23 @@
 #include "easyFingerprint.h"
 
-easyFingerprint::easyFingerprint(Adafruit_Fingerprint* fp){
+easyFingerprint::easyFingerprint(Adafruit_Fingerprint* fp, bool debug = false){
     Adafruit = fp;
+    _debug = debug;
 }
 
-int easyFingerprint::init(void){
-    #ifdef FP_DEBUG_SERIAL
+int easyFingerprint::init(uint32_t baud){
+    if(_debug == true){
     Serial.println("\r\nFingerprint sensor init...");
-    #endif
-    Adafruit->begin(9600*6);
+    }
+    Adafruit->begin(baud);
     bool _respond = Adafruit->verifyPassword();
-    #ifdef FP_DEBUG_SERIAL
+    if(_debug == true){
     if(true != _respond){
         Serial.println("Can't find fingerprint sensor :(");
     } else{
         Serial.println("Found fingerprint sensor :)");
     }
-    #endif
+    }
     if(true != _respond){
         return FP_FAILURE;
     }
@@ -27,15 +28,15 @@ int easyFingerprint::init(void){
 
 int easyFingerprint::save(uint16_t id){
     int _respond;
-    #ifdef FP_DEBUG_SERIAL
+    if(_debug == true){
     Serial.println("");
     Serial.println("Fingerprint Register...");
-    #endif
+    }
     /* Check if Flash ID valid */
     if(id > (FP_MAX_REG - 1)){
-        #ifdef FP_DEBUG_SERIAL
+        if(_debug == true){
         Serial.println("ID not valid");
-        #endif
+        }
         return FP_FAILURE;
     }
     /* Get finger character file and save to CharBuffer1 */
@@ -49,7 +50,7 @@ int easyFingerprint::save(uint16_t id){
     
     /* Combine 2 character file to make template */
     _respond = Adafruit->createModel();
-    #ifdef FP_DEBUG_SERIAL
+    if(_debug == true){
     if(FINGERPRINT_OK == _respond){
       Serial.println("SUCCESS: Fingerprint model created.");
     } else if(FINGERPRINT_ENROLLMISMATCH == _respond){
@@ -58,14 +59,14 @@ int easyFingerprint::save(uint16_t id){
       Serial.print("ERR: Unknown error 0x");
       Serial.println(_respond, HEX);
     }
-    #endif
+    }
     if(FINGERPRINT_OK != _respond){
         return FP_FAILURE;
     }
     
     /* Save to flash */
     _respond = Adafruit->storeModel(id);
-    #ifdef FP_DEBUG_SERIAL
+    if(_debug == true){
     if(FINGERPRINT_OK == _respond){
       Serial.println("SUCCESS: Fingerprint has been saved.");
     } else if(FINGERPRINT_BADLOCATION == _respond){
@@ -76,7 +77,7 @@ int easyFingerprint::save(uint16_t id){
         Serial.print("ERR: Unknown error 0x");
         Serial.println(_respond, HEX);
     }
-    #endif
+    }
     if(FINGERPRINT_OK != _respond){
         return FP_FAILURE;
     }
@@ -86,10 +87,10 @@ int easyFingerprint::save(uint16_t id){
 int easyFingerprint::scan(uint16_t* id){
     int _respond;
     uint16_t _result = NULL;
-    #ifdef FP_DEBUG_SERIAL
+    if(_debug == true){
     Serial.println("");
     Serial.println("Waiting for fingerprint...");
-    #endif
+    }
     /* Read fingerprint */
     while(FINGERPRINT_OK == Adafruit->getImage());
     while(FINGERPRINT_OK != Adafruit->getImage());
@@ -97,7 +98,7 @@ int easyFingerprint::scan(uint16_t* id){
     
     /* Search from database */
     _respond = Adafruit->fingerFastSearch();
-    #ifdef FP_DEBUG_SERIAL
+    if(_debug == true){
     if(FINGERPRINT_OK == _respond){
         Serial.println("SUCCESS: Fingerprint found.");
     } else if(FINGERPRINT_NOTFOUND == _respond){
@@ -106,16 +107,16 @@ int easyFingerprint::scan(uint16_t* id){
         Serial.print("ERR: Unknown error 0x");
         Serial.println(_respond, HEX);
     }
-    #endif
+    }
     if(_respond != FINGERPRINT_OK){
         return FP_FAILURE;
     }
-    #ifdef FP_DEBUG_SERIAL
+    if(_debug == true){
     Serial.print("fingerID: ");
     Serial.println(Adafruit->fingerID);
     Serial.print("confidence: ");
     Serial.println(Adafruit->confidence);
-    #endif
+    }
     if(Adafruit->confidence > 100){
         *id = Adafruit->fingerID;
     }
@@ -124,19 +125,88 @@ int easyFingerprint::scan(uint16_t* id){
 
 int easyFingerprint::erase(void){
     int _respond = Adafruit->emptyDatabase();
-    #ifdef FP_DEBUG_SERIAL
+    if(_debug == true){
     if(FINGERPRINT_OK == _respond){
-        Serial.print("SUCCESS: Database clear");
+        Serial.println("SUCCESS: Database clear");
     } else if(FINGERPRINT_DBCLEARFAIL == _respond){
-        Serial.print("ERR: Can't clear database");
+        Serial.println("ERR: Can't clear database");
     } else{
         Serial.print("ERR: Unknown error 0x");
         Serial.println(_respond, HEX); 
     }
-    #endif
+    }
     if(FINGERPRINT_OK != _respond){
         return FP_FAILURE;
     } else{
         return FP_SUCCESS;
     }
 }
+
+int easyFingerprint::del(uint16_t id){
+    int _respond;
+    _respond = Adafruit->deleteModel(id);
+    if(_debug == true){
+      if(FINGERPRINT_OK == _respond){
+          Serial.println("SUCCESS: Template deleted");
+      } else if(FINGERPRINT_DELETEFAIL == _respond){
+          Serial.println("ERR: Can't delete template");
+      } else{
+          Serial.print("ERR: Unknown error 0x");
+          Serial.println(_respond, HEX); 
+      }
+    }
+}
+
+int easyFingerprint::send(uint16_t id, uint8_t buffer[], SoftwareSerial* ss){
+  int _respond = Adafruit->loadModel(id);
+  if(_debug == true){
+    if(FINGERPRINT_OK == _respond){
+        Serial.println("SUCCESS: Template loaded");
+    } else if(FINGERPRINT_DBRANGEFAIL == _respond){
+        Serial.println("ERR: Template is not valid");
+    } else{
+        Serial.print("ERR: Unknown error 0x");
+        Serial.println(_respond, HEX); 
+    }
+  }
+  if(FINGERPRINT_OK != _respond){
+    return FP_FAILURE;
+  }
+  _respond = Adafruit->getModel();
+  if(_debug == true){
+    if(FINGERPRINT_OK == _respond){
+        Serial.println("SUCCESS: Template uploading");
+    } else if(FINGERPRINT_DBRANGEFAIL == _respond){
+        Serial.println("ERR: Template upload error");
+    } else{
+        Serial.print("ERR: Unknown error 0x");
+        Serial.println(_respond, HEX); 
+    }
+  }
+  if(FINGERPRINT_OK != _respond){
+    return FP_FAILURE;
+  }
+  uint32_t _start;
+  uint8_t k;
+  uint32_t i;
+  _start = millis();
+  while((millis() - _start) < 1000){
+    if(ss->available()){
+      k = ss->read();
+      buffer[i] = k;
+      i++;
+    }
+  }
+  if(_debug == true){
+    for(i = 0; i < 688; i++){
+      if((i%43) == 0){
+        Serial.println("");
+      }
+      Serial.print("0x");
+      Serial.print(int(buffer[i]), HEX);
+      Serial.print(" ");
+    }
+  }
+  return FP_SUCCESS;
+}
+
