@@ -8,11 +8,7 @@
  * 4. Put a finger on the sensor and it will return if it's the same or not.
  */
 
-// #define FP_DEBUG_SERIAL
-
-SoftwareSerial mySerial(12, 13);
-Adafruit_Fingerprint Adafruit_FP = Adafruit_Fingerprint(&mySerial);
-easyFingerprint fp(&Adafruit_FP);
+easyFingerprint fp(2, 3);
 
 uint16_t _id = 1;
 int _respond;

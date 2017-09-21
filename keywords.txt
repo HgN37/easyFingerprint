@@ -16,6 +16,8 @@ init 	KEYWORD2
 save 	KEYWORD2
 scan 	KEYWORD2
 erase 	KEYWORD2
+del     KEYWORD2
+send    KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

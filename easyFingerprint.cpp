@@ -1,22 +1,23 @@
 #include "easyFingerprint.h"
 
-easyFingerprint::easyFingerprint(Adafruit_Fingerprint* fp, bool debug = false){
-    Adafruit = fp;
+easyFingerprint::easyFingerprint(int Tx, int Rx, bool debug = false){
+    ss = new SoftwareSerial(Tx, Rx);
+    Adafruit = new Adafruit_Fingerprint(ss);
     _debug = debug;
 }
 
 int easyFingerprint::init(uint32_t baud){
     if(_debug == true){
-    Serial.println("\r\nFingerprint sensor init...");
+        Serial.println("\r\nFingerprint sensor init...");
     }
     Adafruit->begin(baud);
     bool _respond = Adafruit->verifyPassword();
     if(_debug == true){
-    if(true != _respond){
-        Serial.println("Can't find fingerprint sensor :(");
-    } else{
-        Serial.println("Found fingerprint sensor :)");
-    }
+        if(true != _respond){
+            Serial.println("Can't find fingerprint sensor :(");
+        } else{
+            Serial.println("Found fingerprint sensor :)");
+        }
     }
     if(true != _respond){
         return FP_FAILURE;
@@ -157,7 +158,7 @@ int easyFingerprint::del(uint16_t id){
     }
 }
 
-int easyFingerprint::send(uint16_t id, uint8_t buffer[], SoftwareSerial* ss){
+int easyFingerprint::send(uint16_t id, uint8_t buffer[]){
   int _respond = Adafruit->loadModel(id);
   if(_debug == true){
     if(FINGERPRINT_OK == _respond){

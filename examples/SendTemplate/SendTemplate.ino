@@ -4,9 +4,7 @@
 
 #include <easyFingerprint.h>
 
-SoftwareSerial mySerial(2, 3);
-Adafruit_Fingerprint Adafruit_FP = Adafruit_Fingerprint(&mySerial);
-easyFingerprint fp(&Adafruit_FP, true);
+easyFingerprint fp(2, 3, true);
 
 uint8_t buffer[688];
 
@@ -14,7 +12,7 @@ void setup() {
   Serial.begin(115200);
   fp.init(9600*6);
   fp.save(1);
-  fp.send(1, buffer, &mySerial);
+  fp.send(1, buffer);
 }
 
 void loop() {
