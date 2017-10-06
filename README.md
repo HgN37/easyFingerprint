@@ -4,7 +4,7 @@
 This project make an easy-to-use library for Ardafruit Fingerprint Sensor R30x-series based on Ardafruit's library.
 
 ## Usage
-* Firsly install Adafruit-Fingerprint-Sensor-Library, link in References.
+* Firstly install Adafruit-Fingerprint-Sensor-Library, link in References.
 * This library use  Adafruit_Fingerprint class, which use SoftwareSerial, so:
 ```cpp
 easyFingerprint fp(int Tx, int Rx);
