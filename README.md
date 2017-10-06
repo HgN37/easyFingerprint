@@ -14,7 +14,7 @@ easyFingerprint fp(int Tx, int Rx);
 easyFingerprint fp(int Tx, int Rx, true);
 ```
 
-# Notes
+## Notes
 * Function upload need a buffer with the size of 688 to get all the frame.
   * After the ACK frame, the sensor will send 15 package with package identifier is 0x02, each package has 32 bytes.
   * The last package will have 0x08 as package identifier, but also have 32 bytes data.
