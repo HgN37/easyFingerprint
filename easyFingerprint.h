@@ -14,11 +14,12 @@ class easyFingerprint{
 public:
     easyFingerprint(int Tx, int Rx, bool debug = false);
     int init(uint32_t baud);
-    int save(uint16_t id);
-    int scan(uint16_t* id);
+    int save(uint16_t id, uint32_t timeout = 3000);
+    int scan(uint16_t* id, uint32_t timeout = 1000);
     int erase(void);
     int del(uint16_t id);
-    int send(uint16_t id, uint8_t buffer[]);
+    int upload(uint16_t id, uint8_t buffer[]);
+    int download(uint16_t id, uint8_t buffer[]);
 private:
     Adafruit_Fingerprint* Adafruit;
     SoftwareSerial* ss;

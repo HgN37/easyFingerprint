@@ -27,7 +27,7 @@ int easyFingerprint::init(uint32_t baud){
     }
 }
 
-int easyFingerprint::save(uint16_t id){
+int easyFingerprint::save(uint16_t id, uint32_t timeout){
     int _respond;
     if(_debug == true){
     Serial.println("");
@@ -41,12 +41,26 @@ int easyFingerprint::save(uint16_t id){
         return FP_FAILURE;
     }
     /* Get finger character file and save to CharBuffer1 */
-    while(FINGERPRINT_OK == Adafruit->getImage());
-    while(FINGERPRINT_OK != Adafruit->getImage());
+    uint32_t _time = millis();
+    while(FINGERPRINT_OK != Adafruit->getImage()){
+      if((millis()-_time)>timeout){
+        return FP_FAILURE;
+      }
+    }
     Adafruit->image2Tz(1);
     /* Get finger character file and save to CharBuffer2 */
-    while(FINGERPRINT_OK == Adafruit->getImage());
-    while(FINGERPRINT_OK != Adafruit->getImage());
+    _time = millis();
+    while(FINGERPRINT_OK == Adafruit->getImage()){
+      if((millis()-_time)>timeout){
+        return FP_FAILURE;
+      }
+    }
+    _time = millis();
+    while(FINGERPRINT_OK != Adafruit->getImage()){
+      if((millis()-_time)>timeout){
+        return FP_FAILURE;
+      }
+    }
     Adafruit->image2Tz(2);
     
     /* Combine 2 character file to make template */
@@ -85,7 +99,7 @@ int easyFingerprint::save(uint16_t id){
     return FP_SUCCESS;
 }
 
-int easyFingerprint::scan(uint16_t* id){
+int easyFingerprint::scan(uint16_t* id, uint32_t timeout){
     int _respond;
     uint16_t _result = NULL;
     if(_debug == true){
@@ -93,8 +107,12 @@ int easyFingerprint::scan(uint16_t* id){
     Serial.println("Waiting for fingerprint...");
     }
     /* Read fingerprint */
-    while(FINGERPRINT_OK == Adafruit->getImage());
-    while(FINGERPRINT_OK != Adafruit->getImage());
+    uint32_t _time = millis();
+    while(FINGERPRINT_OK != Adafruit->getImage()){
+      if((millis()-_time)>timeout){
+        return FP_FAILURE;
+      }
+    }
     Adafruit->image2Tz(1);
     
     /* Search from database */
@@ -158,7 +176,7 @@ int easyFingerprint::del(uint16_t id){
     }
 }
 
-int easyFingerprint::send(uint16_t id, uint8_t buffer[]){
+int easyFingerprint::upload(uint16_t id, uint8_t buffer[]){
   int _respond = Adafruit->loadModel(id);
   if(_debug == true){
     if(FINGERPRINT_OK == _respond){
@@ -207,6 +225,33 @@ int easyFingerprint::send(uint16_t id, uint8_t buffer[]){
       Serial.print(int(buffer[i]), HEX);
       Serial.print(" ");
     }
+  }
+  return FP_SUCCESS;
+}
+
+int easyFingerprint::download(uint16_t id, uint8_t buffer[]){
+  uint8_t _packet[] = {0x09, 0x01};
+  uint8_t _reply[20];
+  int _respond;
+  Adafruit->writePacket(0xFFFFFFFF, FINGERPRINT_COMMANDPACKET, sizeof(_packet)+2, _packet);
+  Adafruit->getReply(_reply);
+  _respond = _reply[1];
+  if(_debug == true){
+    if(FINGERPRINT_OK == _respond){
+      Serial.println("SUCCESS: Template downloading");
+    } else if(FINGERPRINT_PACKETRESPONSEFAIL == _respond){
+      Serial.println("ERR: Template download error");
+    } else{
+      Serial.print("ERR: Unknown error 0x");
+      Serial.println(_respond, HEX); 
+    }
+  }
+  if(FINGERPRINT_OK != _respond){
+    return FP_FAILURE;
+  }
+  int i;
+  for(i = 0; i < 688; i++){
+    Serial.write(buffer[i]);
   }
   return FP_SUCCESS;
 }
