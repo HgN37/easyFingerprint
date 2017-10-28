@@ -1,7 +1,20 @@
 #include "easyFingerprint.h"
 
-easyFingerprint::easyFingerprint(int Tx, int Rx, bool debug = false){
-    ss = new SoftwareSerial(Tx, Rx);
+#ifdef __AVR__
+easyFingerprint::easyFingerprint(SoftwareSerial *ss, bool debug = false){
+    swSerial = ss;
+    hwSerial = NULL;
+    mySerial = swSerial;
+    Adafruit = new Adafruit_Fingerprint(ss);
+    _debug = debug;
+}
+#endif
+easyFingerprint::easyFingerprint(HardwareSerial *ss, bool debug = false){
+#ifdef __AVR__
+    swSerial = NULL;
+#endif
+    hwSerial = ss;
+    mySerial = hwSerial;
     Adafruit = new Adafruit_Fingerprint(ss);
     _debug = debug;
 }
@@ -27,25 +40,17 @@ int easyFingerprint::init(uint32_t baud){
     }
 }
 
-int easyFingerprint::save(uint16_t id, uint32_t timeout){
+int easyFingerprint::save(uint16_t id){
     int _respond;
+    uint32_t timeout = 5000;
+    uint32_t _time;
     if(_debug == true){
     Serial.println("");
     Serial.println("Fingerprint Register...");
     }
-    /* Check if Flash ID valid */
-    if(id > (FP_MAX_REG - 1)){
-        if(_debug == true){
-        Serial.println("ID not valid");
-        }
-        return FP_FAILURE;
-    }
     /* Get finger character file and save to CharBuffer1 */
-    uint32_t _time = millis();
-    while(FINGERPRINT_OK != Adafruit->getImage()){
-      if((millis()-_time)>timeout){
-        return FP_FAILURE;
-      }
+    if(FINGERPRINT_OK != Adafruit->getImage()){
+      return FP_FAILURE;
     }
     Adafruit->image2Tz(1);
     /* Get finger character file and save to CharBuffer2 */
@@ -99,7 +104,7 @@ int easyFingerprint::save(uint16_t id, uint32_t timeout){
     return FP_SUCCESS;
 }
 
-int easyFingerprint::scan(uint16_t* id, uint32_t timeout){
+int easyFingerprint::scan(uint16_t* id){
     int _respond;
     uint16_t _result = NULL;
     if(_debug == true){
@@ -107,11 +112,8 @@ int easyFingerprint::scan(uint16_t* id, uint32_t timeout){
     Serial.println("Waiting for fingerprint...");
     }
     /* Read fingerprint */
-    uint32_t _time = millis();
-    while(FINGERPRINT_OK != Adafruit->getImage()){
-      if((millis()-_time)>timeout){
-        return FP_FAILURE;
-      }
+    if(FINGERPRINT_OK != Adafruit->getImage()){
+      return FP_FAILURE;
     }
     Adafruit->image2Tz(1);
     
@@ -205,13 +207,14 @@ int easyFingerprint::upload(uint16_t id, uint8_t buffer[]){
   if(FINGERPRINT_OK != _respond){
     return FP_FAILURE;
   }
+  delay(10);
   uint32_t _start;
   uint8_t k;
-  uint32_t i;
+  uint32_t i = 0;
   _start = millis();
   while((millis() - _start) < 1000){
-    if(ss->available()){
-      k = ss->read();
+    if(mySerial->available()){
+      k = mySerial->read();
       buffer[i] = k;
       i++;
     }
@@ -238,11 +241,11 @@ int easyFingerprint::download(uint16_t id, uint8_t buffer[]){
   _respond = _reply[1];
   if(_debug == true){
     if(FINGERPRINT_OK == _respond){
-      Serial.println("SUCCESS: Template downloading");
+      Serial.println("\nSUCCESS: Template downloading");
     } else if(FINGERPRINT_PACKETRESPONSEFAIL == _respond){
-      Serial.println("ERR: Template download error");
+      Serial.println("\nERR: Template download error");
     } else{
-      Serial.print("ERR: Unknown error 0x");
+      Serial.print("\nERR: Unknown error 0x");
       Serial.println(_respond, HEX); 
     }
   }
@@ -251,7 +254,24 @@ int easyFingerprint::download(uint16_t id, uint8_t buffer[]){
   }
   int i;
   for(i = 0; i < 688; i++){
-    Serial.write(buffer[i]);
+    mySerial->write(buffer[i]);
+  }
+  /* Save to flash */
+  _respond = Adafruit->storeModel(id);
+  if(_debug == true){
+  if(FINGERPRINT_OK == _respond){
+    Serial.println("SUCCESS: Fingerprint has been saved.");
+  } else if(FINGERPRINT_BADLOCATION == _respond){
+    Serial.println("ERR: Flash ID is not valid.");
+  } else if(FINGERPRINT_FLASHERR == _respond) {
+    Serial.println("ERR: Flash can't be written.");
+  } else {
+      Serial.print("ERR: Unknown error 0x");
+      Serial.println(_respond, HEX);
+  }
+  }
+  if(FINGERPRINT_OK != _respond){
+      return FP_FAILURE;
   }
   return FP_SUCCESS;
 }
