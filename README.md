@@ -5,13 +5,18 @@ This project make an easy-to-use library for Ardafruit Fingerprint Sensor R30x-s
 
 ## Usage
 * Firstly install Adafruit-Fingerprint-Sensor-Library, link in References.
-* This library use  Adafruit_Fingerprint class, which use SoftwareSerial, so:
+* This library now support both Software Serial and Hardware Serial:
 ```cpp
-easyFingerprint fp(int Tx, int Rx);
+// Software Serial
+SoftwareSerial swSerial(2, 3);
+easyFingerprint fp(&swSerial);
+// Hardware Serial
+easyFingerprint fp(&Serial1);
 ```
+* It's recommended to use Hardware Serial instead of Software Serial, especially if you need to use upload and download function. And please don't use Software Serial with Arduino Mega Board.
 * Add this param to get debug information via UART.
 ```cpp
-easyFingerprint fp(int Tx, int Rx, true);
+easyFingerprint fp(&Serial1, true);
 ```
 
 ## Notes
@@ -23,11 +28,12 @@ easyFingerprint fp(int Tx, int Rx, true);
 * To sync 2 fingerprint device, just upload from device 1 to buffer, then download that buffer to device 2.
 ```cpp
 uint8_t buffer[688];
-easyFingerprint fp1(10, 11);
-easyFingerprint fp2(12, 13);
+easyFingerprint fp1(&Serial1);
+easyFingerprint fp2(&Serial2);
 fp1.upload(1,buffer);
 fp2.download(1,buffer);
 ```
+* If you get wrong frame while using upload function, I can confirm that it's hardware or wire error [Tested].
 
 ## References
 * Adafruit-Fingerprint-Sensor-Library: https://github.com/adafruit/Adafruit-Fingerprint-Sensor-Library [Copyright (c) 2012, Adafruit Industries]

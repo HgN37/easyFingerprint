@@ -1,4 +1,5 @@
 #include <easyFingerprint.h>
+#include <SoftwareSerial.h>
 
 /*
  * This example show how to save and scan new fingerprint
@@ -7,8 +8,11 @@
  * 3. Do step 1 and 2 again with same finger. Now your fingerprint is saved.
  * 4. Put a finger on the sensor and it will return if it's the same or not.
  */
-
-easyFingerprint fp(2, 3);
+ 
+/* Choose which Serial to use */
+easyFingerprint fp(&Serial1);
+// SoftWareSerial swSerial(2, 3);
+// easyFingerprint fp(&swSerial);
 
 uint16_t _id = 1;
 int _respond;
@@ -34,7 +38,7 @@ void setup() {
   }
 
   Serial.println("\r\n***PLEASE REGISTER YOUR FINGERPRINT***");
-  fp.save(_id);
+  while(FP_SUCCESS != fp.save(_id));
   if(_respond != FP_SUCCESS){
     Serial.println("ERR: Can't save fingerprint");
     while(1);
