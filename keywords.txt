@@ -22,3 +22,5 @@ send    KEYWORD2
 #######################################
 # Constants (LITERAL1)
 #######################################
+FP_SUCCESS LITERAL1
+FP_FAILURE LITERAL1
