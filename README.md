@@ -1,5 +1,8 @@
 # easyFingerprint Arduino Library
 
+## Update
+[No more support] This library is not working with the latest version of its dependencies.
+
 ## Introduction
 This project make an easy-to-use library for Ardafruit Fingerprint Sensor R30x-series based on Ardafruit's library.
 
